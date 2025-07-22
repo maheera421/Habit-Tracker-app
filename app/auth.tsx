@@ -1,9 +1,21 @@
+import { useAuth } from "@/lib/auth-context";
+import { useRouter } from "expo-router";
 import { useState } from "react";
 import { KeyboardAvoidingView, Platform, StyleSheet, View } from "react-native";
-import { Button, Text, TextInput } from 'react-native-paper';
+import { Button, Text, TextInput, useTheme } from 'react-native-paper';
 
 
 export default function AuthScreen() {
+    //defining fucntions to capture user values
+    const [email, setEmail] = useState<string>("");
+    const [password, setPassword] = useState<string>("");
+    // to display all types of errors defined in handleAuth()
+    const [error, setError] = useState<string | null>("");
+
+    // defining variable for error display styling
+    const theme = useTheme()
+    const router = useRouter()
+
     // checks if the user is trying to sign up (false -> sign in)
     const [isSignUp, setIsSignUp] = useState<boolean>(false);
 
@@ -11,6 +23,42 @@ export default function AuthScreen() {
     const handleSwitchMode = () => {
         setIsSignUp((prev) => !prev);
     };
+
+    // to handle authentication functionality
+    const handleAuth = async () => {
+        if (!email|| !password) {
+            setError("Please fill in all fields.");
+            return;
+        }
+
+        if (password.length<6) {
+            setError("Password must be atleast 6 characters or more.");
+            return;
+        }
+
+        // acutally authenticating by saving user credentials
+        setError(null);
+
+        if (isSignUp) {
+            const error = await signUp(email, password)
+            if (error) {
+                setError(error);
+                return;
+            }
+        }
+        else {
+            const error = await signIn(email, password)
+            if (error) {
+                setError(error);
+                return;
+            }
+
+            router.replace("..")
+        }
+    };
+
+    // actual authentication for auth-context file
+    const {signIn, signUp} = useAuth();
 
     return (
         <KeyboardAvoidingView 
@@ -27,17 +75,21 @@ export default function AuthScreen() {
                     placeholder="example@gmail.com"
                     mode="outlined"
                     style={styles.input}
+                    onChangeText={setEmail}
                 />
 
                 <TextInput 
-                    label="Email" 
+                    label="Password" 
                     autoCapitalize="none" 
-                    keyboardType="email-address"
                     mode="outlined"
+                    secureTextEntry
                     style={styles.input}
+                    onChangeText={setPassword}
                 />
 
-                <Button mode="contained" style={styles.button}>
+                {error && <Text style={{color: theme.colors.error}}> {error} </Text>}
+
+                <Button mode="contained" style={styles.button} onPress={handleAuth} >
                     {isSignUp ? "Sign Up" : "Sign In"}
                 </Button>
 
